@@ -111,7 +111,7 @@ class Handler(BaseHTTPRequestHandler):
                 "data_file_kb":      round(file_size / 1024, 1),
                 "scans_excel_kb":    round(scans_size / 1024, 1),
                 "fetch_interval_s":  FETCH_INTERVAL,
-                "collection":        "Bhati-March-2026-Ph2",
+                "collection":        "bhati-march-2026-ph2",
                 "excel_paths": {
                     "scans": SCANS_EXCEL,
                     "users": USERS_EXCEL,
