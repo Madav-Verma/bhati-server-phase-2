@@ -39,8 +39,8 @@ IST_OFFSET       = timedelta(hours=5, minutes=30)
 _BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
 def _p(f):        return os.path.join(_BASE_DIR, f)
 
-SCANS_EXCEL      = _p("scans_cache.xlsx")
-USERS_EXCEL      = _p("user_cache.xlsx")
+SCANS_EXCEL      = os.environ.get("SCANS_EXCEL_PATH", "/data/scans_cache.xlsx")
+USERS_EXCEL      = os.environ.get("USERS_EXCEL_PATH", "/data/user_cache.xlsx")
 OUTPUT_JSON      = _p("data.json")
 SEWADAR_EXCEL    = os.environ.get("SEWADAR_EXCEL_PATH", _p("Sewadar Details.xlsx"))
 
