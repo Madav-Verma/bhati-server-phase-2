@@ -1,6 +1,7 @@
 """
 Bhati March 2026 Phase 2 — Railway Server
 Endpoints: GET /data.json, GET /health, GET /stats, POST /refresh
+           GET /download/scans, GET /download/users
 """
 import threading
 import time
@@ -12,6 +13,10 @@ from datetime import datetime, timezone
 
 _BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE  = os.path.join(_BASE_DIR, "data.json")
+
+# ── Persistent volume paths (Railway Volume mounted at /data) ──
+SCANS_EXCEL = os.environ.get("SCANS_EXCEL_PATH", "/data/scans_cache.xlsx")
+USERS_EXCEL = os.environ.get("USERS_EXCEL_PATH", "/data/user_cache.xlsx")
 
 FETCH_INTERVAL = int(os.environ.get("FETCH_INTERVAL", "30"))  # seconds
 
@@ -41,6 +46,10 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, "OK", "text/plain")
         elif path == "/stats":
             self._serve_stats()
+        elif path == "/download/scans":
+            self._serve_file(SCANS_EXCEL, "scans_cache.xlsx")
+        elif path == "/download/users":
+            self._serve_file(USERS_EXCEL, "user_cache.xlsx")
         else:
             self._send(404, "Not found", "text/plain")
 
@@ -90,6 +99,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _serve_stats(self):
         file_size = os.path.getsize(DATA_FILE) if os.path.exists(DATA_FILE) else 0
+        scans_size = os.path.getsize(SCANS_EXCEL) if os.path.exists(SCANS_EXCEL) else 0
         with _state_lock:
             stats = {
                 "status":            _state["last_fetch_status"],
@@ -99,10 +109,32 @@ class Handler(BaseHTTPRequestHandler):
                 "uptime_seconds":    int((datetime.now(timezone.utc) -
                                          datetime.fromisoformat(_state["start_time"])).total_seconds()),
                 "data_file_kb":      round(file_size / 1024, 1),
+                "scans_excel_kb":    round(scans_size / 1024, 1),
                 "fetch_interval_s":  FETCH_INTERVAL,
                 "collection":        "Bhati-March-2026-Ph2",
+                "excel_paths": {
+                    "scans": SCANS_EXCEL,
+                    "users": USERS_EXCEL,
+                }
             }
         self._send(200, json.dumps(stats), "application/json")
+
+    def _serve_file(self, filepath, filename):
+        """Serve an Excel file as a download."""
+        if not os.path.exists(filepath):
+            self._send(404, f'{{"error":"File not found at {filepath} — may not have data yet"}}',
+                       "application/json")
+            return
+        with open(filepath, "rb") as f:
+            data = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache, no-store")
+        self._cors()
+        self.end_headers()
+        self.wfile.write(data)
 
     def _send(self, code, body, ctype):
         b = body.encode() if isinstance(body, str) else body
@@ -173,5 +205,6 @@ if __name__ == "__main__":
     t.start()
 
     print(f"Server running on port {PORT}")
+    print(f"Excel paths — scans: {SCANS_EXCEL} | users: {USERS_EXCEL}")
     server = HTTPServer(("0.0.0.0", PORT), Handler)
     server.serve_forever()
