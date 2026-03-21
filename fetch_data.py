@@ -30,7 +30,7 @@ import json, os, math, tempfile
 # ═══════════════════════════════════════════════════════════════
 # CONFIG
 # ═══════════════════════════════════════════════════════════════
-SCAN_COLLECTION  = "bhati-march-2026-ph2"
+SCAN_COLLECTION  = "Nit - 2"
 USER_COLLECTION  = "User"
 TIMESTAMP_FIELD  = "timestamp"
 USER_CREATED_FIELD = "createdAt"
